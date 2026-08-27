@@ -17,7 +17,6 @@ VALID_TRANSITIONS = {
     'rejected':    [],
 }
 
-
 @app.get("/")
 def root():
     return {"message": "MES 系統啟動中"}
@@ -241,3 +240,47 @@ def update_work_order_status(
     except psycopg2.Error as e:
         logger.error("工單 #%d 狀態更新失敗（未預期錯誤）：%s", order_id, e)
         raise HTTPException(status_code=500, detail="資料庫更新失敗")
+
+class DefectCreate(BaseModel):
+    work_order_id: int
+    defect_type: str
+    defect_count: int
+
+@app.post("/defects")
+def create_defect(data: DefectCreate, cursor=Depends(get_cursor)):
+    try:
+        cursor.execute("SELECT status FROM work_orders WHERE id = %s", [data.work_order_id])
+        row = cursor.fetchone()
+    except psycopg2.Error as e:
+        logger.error("查詢工單 #%d 失敗：%s", data.work_order_id, e)
+        raise HTTPException(status_code=500, detail="資料庫查詢失敗")
+
+    if row is None:
+        logger.warning("回報不良品失敗：工單 #%d 不存在", data.work_order_id)
+        raise HTTPException(status_code=404, detail="工單不存在")
+
+    if row["status"] != "in_progress":
+        logger.warning(
+            "回報不良品失敗：工單 #%d 狀態為 %s，非 in_progress",
+            data.work_order_id, row["status"]
+        )
+        raise HTTPException(
+            status_code=400,
+            detail=f"只有 in_progress 狀態的工單可以回報不良品（目前狀態：{row['status']}）"
+        )
+
+    try:
+        cursor.execute("""
+            INSERT INTO defects (work_order_id, defect_type, defect_count)
+            VALUES (%s, %s, %s)
+            RETURNING id, work_order_id, defect_type, defect_count, reported_at
+        """, [data.work_order_id, data.defect_type, data.defect_count])
+        result = cursor.fetchone()
+        logger.info(
+            "工單 #%d 回報不良品：%s x %d",
+            data.work_order_id, data.defect_type, data.defect_count
+        )
+        return result
+    except psycopg2.Error as e:
+        logger.error("回報不良品失敗（未預期錯誤）：%s", e)
+        raise HTTPException(status_code=500, detail="資料庫寫入失敗")

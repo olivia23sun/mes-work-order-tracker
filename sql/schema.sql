@@ -34,9 +34,9 @@ CREATE TABLE processes (
 CREATE TABLE work_orders (
     id              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     order_code      VARCHAR(30) UNIQUE NOT NULL,
-    machine_id      INTEGER REFERENCES machines(id),
-    process_id      INTEGER REFERENCES processes(id),
-    operator_id     INTEGER REFERENCES operators(id),
+    machine_id      INTEGER NOT NULL REFERENCES machines(id),
+    process_id      INTEGER NOT NULL REFERENCES processes(id),
+    operator_id     INTEGER NOT NULL REFERENCES operators(id),
     status          VARCHAR(20) DEFAULT 'pending'
                         CHECK (status IN ('pending', 'in_progress', 'completed', 'rejected')),
     quantity        INTEGER NOT NULL CHECK (quantity > 0),

@@ -1,9 +1,9 @@
 """
 測試策略：
-用 FastAPI 的 dependency override 把 get_cursor 換成假的 MockCursor，
+用FastAPI的dependency override把get_cursor換成假的MockCursor，
 測試不需要真的連 PostgreSQL：跑得快，也不會弄髒實際資料庫。
 重點測「業務邏輯」（狀態流轉規則、404/400 情境），SQL 本身的正確性
-交給實際跑在 sql/ 上的手動驗證或未來的 DB 整合測試。
+交給實際跑在sql/上的手動驗證或未來的DB整合測試。
 """
 import os
 import sys
@@ -86,4 +86,52 @@ def test_work_orders_pagination_bounds():
     app.dependency_overrides[get_cursor] = _override(mock)
     response = client.get("/work-orders?limit=9999")
     assert response.status_code == 200
+    app.dependency_overrides.clear()
+
+def test_create_defect_success():
+    mock = MockCursor(
+        fetchone_result=None 
+    )
+
+    # work_orders 查詢回傳 in_progress，INSERT 後回傳新建的 defect
+    class SequencedCursor(MockCursor):
+        def __init__(self):
+            self._calls = 0
+
+        def execute(self, query, params=None):
+            self._calls += 1
+
+        def fetchone(self):
+            if self._calls == 1:
+                return {"status": "in_progress"}
+            return {
+                "id": 1, "work_order_id": 21, "defect_type": "毛邊",
+                "defect_count": 3, "reported_at": "2024-01-10T09:00:00"
+            }
+
+    app.dependency_overrides[get_cursor] = _override(SequencedCursor())
+    response = client.post("/defects", json={
+        "work_order_id": 21, "defect_type": "毛邊", "defect_count": 3
+    })
+    assert response.status_code == 200
+    assert response.json()["defect_type"] == "毛邊"
+    app.dependency_overrides.clear()
+
+
+def test_create_defect_work_order_not_found():
+    app.dependency_overrides[get_cursor] = _override(MockCursor(fetchone_result=None))
+    response = client.post("/defects", json={
+        "work_order_id": 9999, "defect_type": "毛邊", "defect_count": 3
+    })
+    assert response.status_code == 404
+    app.dependency_overrides.clear()
+
+
+def test_create_defect_invalid_status():
+    mock = MockCursor(fetchone_result={"status": "pending"})
+    app.dependency_overrides[get_cursor] = _override(mock)
+    response = client.post("/defects", json={
+        "work_order_id": 24, "defect_type": "毛邊", "defect_count": 3
+    })
+    assert response.status_code == 400
     app.dependency_overrides.clear()

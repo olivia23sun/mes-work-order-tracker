@@ -36,6 +36,7 @@
 
 - 工單生命週期管理（pending → in_progress → completed / rejected）
 - 雙層狀態流轉驗證（API 層 + DB Trigger）
+- 不良品即時回報（限 in_progress 狀態工單）
 - 設備良率報表
 - 各設備主要不良類型排行（CTE + Window Function）
 - 每日產出趨勢，支援日期範圍篩選
@@ -197,6 +198,7 @@ pytest
 | `GET` | `/work-orders/{id}` | 查詢單筆工單 |
 | `POST` | `/work-orders` | 建立新工單 |
 | `PUT` | `/work-orders/{id}/status` | 更新工單狀態 |
+| `POST` | `/defects` | 回報不良品（僅限 in_progress 狀態工單） |
 
 **POST `/work-orders` 請求格式：**
 ```json
@@ -217,6 +219,17 @@ pytest
 有效狀態：`pending` → `in_progress` → `completed` / `rejected`
 
 非法流轉會回傳 400，並說明當前狀態允許的下一步。
+
+**POST `/defects` 請求格式：**
+```json
+{
+  "work_order_id": 21,
+  "defect_type": "毛邊",
+  "defect_count": 3
+}
+```
+
+非 `in_progress` 狀態的工單回報會回傳 400。
 
 ### 報表
 
