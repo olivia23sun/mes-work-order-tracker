@@ -26,14 +26,20 @@ CREATE VIEW v_machine_yield AS
 SELECT
     m.machine_name,
     SUM(wo.quantity) AS total_qty,
-    COALESCE(SUM(d.defect_count), 0) AS total_defects,
+    COALESCE(SUM(d.total_defects), 0) AS total_defects,
     ROUND(
-        (SUM(wo.quantity) - COALESCE(SUM(d.defect_count), 0))::NUMERIC
-        / SUM(wo.quantity) * 100
+        (SUM(wo.quantity) - COALESCE(SUM(d.total_defects), 0))::NUMERIC
+        / NULLIF(SUM(wo.quantity), 0) * 100
     , 2) AS yield_rate
 FROM work_orders wo
 JOIN machines m ON wo.machine_id = m.id
-LEFT JOIN defects d ON wo.id = d.work_order_id
+LEFT JOIN (
+    SELECT 
+        work_order_id, 
+        SUM(defect_count) AS total_defects
+    FROM defects
+    GROUP BY work_order_id
+) d ON wo.id = d.work_order_id
 WHERE wo.status = 'completed'
 GROUP BY m.id, m.machine_name;
 

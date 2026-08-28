@@ -72,13 +72,19 @@ def get_daily_output(
 ):
     try:
         query = """
-            SELECT
-                DATE(o.start_time) AS date,
-                SUM(o.quantity) AS total_qty,
-                COALESCE(SUM(d.defect_count), 0) AS total_defects
-            FROM work_orders o
-            LEFT JOIN defects d ON o.id = d.work_order_id
-            WHERE o.status = 'completed'
+                SELECT
+                    DATE(o.start_time) AS date,
+                    SUM(o.quantity) AS total_qty,
+                    COALESCE(SUM(d.total_defects), 0) AS total_defects
+                FROM work_orders o
+                LEFT JOIN (
+                    SELECT 
+                        work_order_id, 
+                        SUM(defect_count) AS total_defects
+                    FROM defects
+                    GROUP BY work_order_id
+                ) d ON o.id = d.work_order_id
+                WHERE o.status = 'completed'
         """
 
         params = []
