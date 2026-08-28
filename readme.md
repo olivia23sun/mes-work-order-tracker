@@ -18,7 +18,7 @@
 - **防禦性程式設計**：於 API 層使用參數化查詢（`%s`）與 Pydantic 模型驗證，有效防止 SQL Injection 並確保輸入數據格式正確。
 - **SQL 資料抽象化**：利用 SQL View 封裝複雜的報表統計邏輯（如 `v_machine_yield`、`v_top_defect_by_machine`），降低應用程式層的維護成本與重複代碼。
 - **Dependency Injection 連線管理**：使用 FastAPI `Depends` 搭配 `get_cursor()` generator，統一管理資料庫連線生命週期，自動處理 commit / rollback / 關閉，消除連線洩漏風險。
-- **集中式日誌**：`logger.py` 統一設定 console + `RotatingFileHandler`（單檔 5MB、保留 3 份），所有端點的查詢與錯誤皆有紀錄可追溯。
+- **集中式日誌**：`logger.py` 統一設定 console + `RotatingFileHandler`（單檔 5MB、保留 3 份），API 端點統一使用 logging 記錄主要操作與錯誤。
 
 ## 技術棧
 
@@ -38,7 +38,7 @@
 - 雙層狀態流轉驗證（API 層 + DB Trigger）
 - 不良品即時回報（限 in_progress 狀態工單）
 - 設備良率報表
-- 各設備主要不良類型排行（CTE + Window Function）
+- 各設備不良數量最高的主要不良類型（CTE + Window Function）
 - 每日產出趨勢，支援日期範圍篩選
 - 不良品紀錄與工單關聯
 - 狀態變更時自動記錄開始／結束時間，並同步機台運轉狀態
@@ -246,6 +246,8 @@ GET /report/daily-output?start_date=2024-01-02&end_date=2024-01-09
 ```
 
 ## Future Improvements
+
+目前版本聚焦於 MES 核心業務邏輯與資料庫設計，尚未實作使用者身分驗證與授權機制，所有端點皆可直接存取。
 
 - JWT 身分驗證
 - 工單歷程追蹤（Audit Log）
