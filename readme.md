@@ -127,10 +127,10 @@ pending → in_progress → completed / rejected
 
 透過資料庫層級約束確保資料正確性：
 
-- Foreign Key — 防止孤立紀錄
-- NOT NULL — 確保必填欄位
-- CHECK Constraint — 限制狀態與數值範圍
-- IDENTITY Primary Key — 現代 PostgreSQL 標準寫法
+- `PRIMARY KEY`：確保各資料表具有唯一識別值
+- `NOT NULL`：工單的 `order_code`、`quantity`、`machine_id`、`process_id`、`operator_id` 等必要欄位不得為 NULL
+- `FOREIGN KEY`：確保工單與作業員、設備、製程，以及不良品與工單之間的關聯資料存在
+- `CHECK Constraint`：限制工單狀態、數量及設備狀態等欄位的合法值範圍
 
 ## 環境設定
 
@@ -186,7 +186,7 @@ pip install -r requirements.txt
 pytest
 ```
 
-涵蓋範圍：狀態流轉規則、404/409/400 錯誤情境、分頁邊界。SQL 本身的正確性交由手動驗證或未來的 DB 整合測試。
+涵蓋範圍：狀態流轉規則、404/400 錯誤情境、分頁邊界。SQL 本身的正確性交由手動驗證或未來的 DB 整合測試。
 
 ## API 端點
 
