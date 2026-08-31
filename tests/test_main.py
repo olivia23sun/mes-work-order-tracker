@@ -7,6 +7,7 @@
 """
 import os
 import sys
+import psycopg2
 
 # database.py 匯入時會檢查 DB_PASSWORD，測試環境給一個假值即可
 os.environ.setdefault("DB_PASSWORD", "test-only-not-real")
@@ -135,3 +136,40 @@ def test_create_defect_invalid_status():
     })
     assert response.status_code == 400
     app.dependency_overrides.clear()
+
+def test_create_work_order_duplicate_order_code():
+    class DuplicateCursor(MockCursor):
+        def execute(self, query, params=None):
+            if "INSERT INTO work_orders" in query:
+                raise psycopg2.errors.UniqueViolation("duplicate key")
+
+    app.dependency_overrides[get_cursor] = _override(DuplicateCursor())
+    response = client.post("/work-orders", json={
+        "order_code": "WO-2024-001", "machine_id": 1,
+        "process_id": 1, "operator_id": 1, "quantity": 10
+    })
+    assert response.status_code == 409
+    app.dependency_overrides.clear()
+
+
+def test_create_work_order_invalid_fk():
+    class FKViolationCursor(MockCursor):
+        def execute(self, query, params=None):
+            if "INSERT INTO work_orders" in query:
+                raise psycopg2.errors.ForeignKeyViolation("fk violation")
+
+    app.dependency_overrides[get_cursor] = _override(FKViolationCursor())
+    response = client.post("/work-orders", json={
+        "order_code": "WO-2024-999", "machine_id": 9999,
+        "process_id": 1, "operator_id": 1, "quantity": 10
+    })
+    assert response.status_code == 400
+    app.dependency_overrides.clear()
+
+
+def test_create_work_order_invalid_quantity():
+    response = client.post("/work-orders", json={
+        "order_code": "WO-2024-998", "machine_id": 1,
+        "process_id": 1, "operator_id": 1, "quantity": 0
+    })
+    assert response.status_code == 422
