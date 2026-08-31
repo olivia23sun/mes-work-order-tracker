@@ -137,7 +137,7 @@ pending → in_progress → completed / rejected
 ### 方法一：Docker 一鍵啟動（推薦）
 
 ```bash
-docker-compose up --build 
+docker-compose up --build 資料完整
 ```
 
 會自動啟動 PostgreSQL、依序執行 `schema.sql` → `views.sql` → `indexes.sql` → `seed_data.sql`，並啟動 API 服務。
@@ -186,7 +186,7 @@ pip install -r requirements.txt
 pytest
 ```
 
-涵蓋範圍：狀態流轉規則、404/400 錯誤情境、分頁邊界。SQL 本身的正確性交由手動驗證或未來的 DB 整合測試。
+涵蓋範圍：狀態流轉規則、404/400/409/422 錯誤情境、分頁邊界。SQL 本身的正確性交由手動驗證或未來的 DB 整合測試。
 
 ## API 端點
 
@@ -244,6 +244,7 @@ pytest
 ```
 GET /report/daily-output?start_date=2024-01-02&end_date=2024-01-09
 ```
+若 start_date 晚於 end_date，回傳 400。
 
 ## Future Improvements
 
