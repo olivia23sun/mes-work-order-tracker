@@ -253,7 +253,7 @@ def update_work_order_status(
 class DefectCreate(BaseModel):
     work_order_id: int
     defect_type: str = Field(..., min_length=1)
-    defect_count: int = Field(..., gt=0)    defect_count: int
+    defect_count: int = Field(..., gt=0)   
 
 @app.post("/defects")
 def create_defect(data: DefectCreate, cursor=Depends(get_cursor)):

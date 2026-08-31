@@ -137,7 +137,7 @@ pending → in_progress → completed / rejected
 ### 方法一：Docker 一鍵啟動（推薦）
 
 ```bash
-docker-compose up --build 資料完整
+docker-compose up --build
 ```
 
 會自動啟動 PostgreSQL、依序執行 `schema.sql` → `views.sql` → `indexes.sql` → `seed_data.sql`，並啟動 API 服務。
