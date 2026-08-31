@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException, Depends
 from database import get_cursor
 from logger import get_logger
 from datetime import date
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Optional, Literal
 import psycopg2
 
 app = FastAPI()
@@ -150,11 +150,11 @@ def get_work_order(order_id: int, cursor=Depends(get_cursor)):
 
 
 class WorkOrderCreate(BaseModel):
-    order_code: str
+    order_code: str = Field(..., min_length=1)
     machine_id: int
     process_id: int
     operator_id: int
-    quantity: int
+    quantity: int = Field(..., gt=0)
 
 
 @app.post("/work-orders")
@@ -180,7 +180,7 @@ def create_work_order(data: WorkOrderCreate, cursor=Depends(get_cursor)):
 
 
 class WorkOrderStatus(BaseModel):
-    status: str
+    status: Literal["pending", "in_progress", "completed", "rejected"]
 
 
 @app.put("/work-orders/{order_id}/status")
@@ -249,8 +249,8 @@ def update_work_order_status(
 
 class DefectCreate(BaseModel):
     work_order_id: int
-    defect_type: str
-    defect_count: int
+    defect_type: str = Field(..., min_length=1)
+    defect_count: int = Field(..., gt=0)    defect_count: int
 
 @app.post("/defects")
 def create_defect(data: DefectCreate, cursor=Depends(get_cursor)):
