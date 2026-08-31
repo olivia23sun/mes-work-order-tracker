@@ -1,7 +1,9 @@
 -- 報表 View 與工單狀態流轉 Trigger
 
 -- 工單完整資訊。LEFT JOIN 而非 INNER JOIN：
--- 避免關聯資料缺漏（如作業員被刪除）連帶讓整張工單從結果消失。
+-- 防禦性設計，避免任一關聯表（機台/製程/作業員）資料異常時，
+-- 整筆工單從報表結果中消失（machine_id/process_id/operator_id 皆為 NOT NULL + FK，
+-- 正常情況下不會真的缺漏，這裡是保守寫法）。
 CREATE VIEW v_work_order_detail AS
 SELECT
     wo.id,
