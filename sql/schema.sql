@@ -47,7 +47,7 @@ CREATE TABLE work_orders (
 
 CREATE TABLE defects (
     id              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    work_order_id   INTEGER REFERENCES work_orders(id),
+    work_order_id   INTEGER NOT NULL REFERENCES work_orders(id),
     defect_type     VARCHAR(50) NOT NULL,
     defect_count    INTEGER NOT NULL CHECK (defect_count > 0),
     reported_at     TIMESTAMP DEFAULT NOW()
